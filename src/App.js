@@ -3,29 +3,29 @@ import "./App.css";
 import { AWS_LAMBDA_API } from "./config";
 
 const App = () => {
-  const [selectedFile, setSelectedFile] = useState(null);
+  const [selectedFiles, setSelectedFiles] = useState([]);
   const [isFileUploadedSuccessfully, setIsFileUploadedSuccessfully] = useState(false);
 
   const handleFileChange = (event) => {
-    console.log("handle file change triggered");
-    setSelectedFile(event.target.files[0]);
+    setSelectedFiles([...selectedFiles, ...event.target.files]);
   };
 
   const handleFileUpload = () => {
-    console.log("handle file upload triggered");
-    console.log("selectedFile", selectedFile);
     const formData = new FormData();
-    formData.append("demo file", selectedFile, selectedFile.name);
+
+    selectedFiles.forEach((file, index) => {
+      formData.append(`demo file ${index}`, file, file.name);
+    });
 
     fetch(AWS_LAMBDA_API, {
       method: "POST",
       headers: {
-        "Content-Type": "application/json",
+        "Content-Type": "multipart/form-data",
       },
       body: formData,
     })
       .then(() => {
-        setSelectedFile(null);
+        setSelectedFiles([]);
         setIsFileUploadedSuccessfully(true);
       })
       .catch((error) => {
@@ -33,14 +33,25 @@ const App = () => {
       });
   };
 
+  const removeFile = (fileIndex) => {
+    const updatedFiles = [...selectedFiles];
+    updatedFiles.splice(fileIndex, 1);
+    setSelectedFiles(updatedFiles);
+  };
+
   const FileData = () => {
-    if (selectedFile) {
+    if (selectedFiles.length > 0) {
       return (
         <>
-          <h2>File Details</h2>
-          <p>File Name: {selectedFile.name}</p>
-          <p>File Type: {selectedFile.type}</p>
-          <p>Last Modified: {selectedFile.lastModifiedDate?.toDateString()}</p>
+          <h2>Files</h2>
+          {selectedFiles.map((file, index) => (
+            <div key={index}>
+              <p>File Name: {file.name}</p>
+              <p>File Type: {file.type}</p>
+              <p>Last Modified: {file.lastModifiedDate?.toDateString()}</p>
+              <button onClick={() => removeFile(index)}>Remove</button>
+            </div>
+          ))}
         </>
       );
     } else if (isFileUploadedSuccessfully) {
@@ -54,11 +65,11 @@ const App = () => {
     <div>
       <h2>File Upload System</h2>
       <h3>Built with React, Serverless and S3</h3>
+      <FileData />
       <div>
-        <input type="file" onChange={handleFileChange} />
+        <input type="file" onChange={handleFileChange} multiple />
         <button onClick={handleFileUpload}>Upload</button>
       </div>
-      <FileData />
     </div>
   );
 };
