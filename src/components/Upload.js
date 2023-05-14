@@ -1,35 +1,68 @@
 import { UploadOutlined } from "@ant-design/icons";
-import { Button, Upload as AntdUpload } from "antd";
+import { Button, message, Upload as AntdUpload } from "antd";
 import { useState } from "react";
+import { uploadFiles } from "../api";
 
 const Upload = () => {
   const [fileList, setFileList] = useState([]);
-  const handleChange = (info) => {
-    let newFileList = [...info.fileList];
+  const [uploading, setUploading] = useState(false);
 
-    // 1. Limit the number of uploaded files
-    // Only to show two recent uploaded files, and old ones will be replaced by the new
-    newFileList = newFileList.slice(-2);
-
-    // 2. Read from response and show file link
-    newFileList = newFileList.map((file) => {
-      if (file.response) {
-        // Component will show file.url as link
-        file.url = file.response.url;
-      }
-      return file;
+  const handleUpload = () => {
+    const formData = new FormData();
+    fileList.forEach((file) => {
+      formData.append("files", file.originFileObj, file.name);
     });
-    setFileList(newFileList);
+    setUploading(true);
+
+    uploadFiles(formData)
+      .then((res) => res.json())
+      .then(() => {
+        setFileList([]);
+        message.success("upload successfully.");
+      })
+      .catch(() => {
+        message.error("upload failed.");
+      })
+      .finally(() => {
+        setUploading(false);
+      });
   };
+
   const props = {
-    action: "https://www.mocky.io/v2/5cc8019d300000980a055e76",
-    onChange: handleChange,
+    onChange: (info) => {
+      const newFileList = [...info.fileList];
+      setFileList(newFileList);
+    },
+    onRemove: (file) => {
+      const index = fileList.indexOf(file);
+      const newFileList = fileList.slice();
+      newFileList.splice(index, 1);
+      setFileList(newFileList);
+    },
+    beforeUpload: (file) => {
+      setFileList([...fileList, file]);
+      return false;
+    },
+    fileList,
     multiple: true,
   };
   return (
-    <AntdUpload {...props} fileList={fileList}>
-      <Button icon={<UploadOutlined />}>Upload</Button>
-    </AntdUpload>
+    <>
+      <AntdUpload {...props}>
+        <Button icon={<UploadOutlined />}>Select File</Button>
+      </AntdUpload>
+      <Button
+        type="primary"
+        onClick={handleUpload}
+        disabled={fileList.length === 0}
+        loading={uploading}
+        style={{
+          marginTop: 16,
+        }}
+      >
+        {uploading ? "Uploading" : "Start Upload"}
+      </Button>
+    </>
   );
 };
 

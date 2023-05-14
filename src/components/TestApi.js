@@ -25,16 +25,16 @@ const TestApi = () => {
     setIsLoading(true);
     healthCheck()
       .then(() => {
-        setTimeout(() => {
-          setValue(valueMap.a);
-          setBackgroundColor(colorMap.green);
-        }, 2000);
+        setValue(valueMap.a);
+        setBackgroundColor(colorMap.green);
       })
       .catch(() => {
         setValue(valueMap.c);
         setBackgroundColor(colorMap.red);
+      })
+      .finally(() => {
+        setIsLoading(false);
       });
-    setIsLoading(false);
   };
 
   useEffect(() => {
